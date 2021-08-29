@@ -1,25 +1,38 @@
+#!/usr/bin/env python3.8
+# -*- coding: utf-8 -*-
+
 import pygame
 import random
 import math
-import time
+import logging
+
 
 from pygame import mixer
 
 pygame.init()
 clock = pygame.time.Clock()
 
+
 # Screen
+
 screen = pygame.display.set_mode((800, 600))
 
 # Title and Icon
+
 pygame.display.set_caption("Space Invaders - by Lourães")
-icon = pygame.image.load("icon.png")
+icon = pygame.image.load("icon.png").convert_alpha()
 pygame.display.set_icon(icon)
 
-# Background
-background = pygame.image.load("background.png")
+# Lag Solver
 
-# Music
+def loadimg(imgname):
+    return pygame.image.load(imgname).convert_alpha()
+
+# Background
+
+background = loadimg("background.png")
+
+# Music 
 
 mixer.music.load("thememusic.wav")
 mixer.music.set_volume(0.09)
@@ -29,12 +42,13 @@ print(m_playing)
 
 # Player
 
-playerImg = pygame.image.load("player64.png")
+playerImg = loadimg("player64.png")
 playerX = 370
 playerY = 480
 playerX_change = 0
 
 # Enemy
+
 enemyImg = []
 enemyX = []
 enemyY = []
@@ -43,14 +57,15 @@ enemyY_change = []
 num_enemies = 6
 
 for i in range(num_enemies):
-    enemyImg.append(pygame.image.load("enemy.png"))
+    enemyImg.append(loadimg("enemy.png"))
     enemyX.append(random.randint(0, 735))
     enemyY.append(random.randint(50, 150))
-    enemyX_change.append(0.2)
+    enemyX_change.append(0.5)
     enemyY_change.append(40)
 
 # Bullet
-bulletImg = pygame.image.load("bullet.png")
+
+bulletImg = loadimg("bullet.png")
 bulletX = 0
 bulletY = 480
 bulletX_change = 0
@@ -65,11 +80,20 @@ font = pygame.font.Font("freesansbold.ttf", 32)
 textX = 10
 textY = 10
 
+# Game Over Text
+
+over_font = pygame.font.Font("freesansbold.ttf", 64)
+
+overX = 0
+overY = 0
 
 def show_score(x, y):
     score = font.render("Score: {}".format(str(score_value)), True, (255, 255, 255))
     screen.blit(score, (x, y))
 
+def gameOver():
+    go_text = over_font.render("GAME OVER", True, (255, 255, 255))
+    screen.blit(go_text, (200, 250))
 
 def player(x, y):
     screen.blit(playerImg, (x, y))
@@ -93,11 +117,13 @@ def isCollision(enemyX, enemyY, bulletX, bulletY):
         return False
 
 
-# Game
-run = True
-while run:
-    screen.fill((0, 0, 0))
 
+# Game
+
+scr1 = True
+while scr1:
+    clock.tick(2000000)
+    logging.basicConfig(filename="logfilename.log", level=logging.INFO)
     # Bg Image
     screen.blit(background, (0, 0))
 
@@ -107,10 +133,10 @@ while run:
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
-                run = False
+                scr1 = False
 
         if event.type == pygame.QUIT:
-            run = False
+            scr1 = False
 
         # Sensores de Movimento
 
@@ -159,14 +185,24 @@ while run:
     # Enemy
 
     for i in range(num_enemies):
+
+        # Game Over
+        if enemyY[i] > 440:
+            for j in range(num_enemies):
+                enemyY[j] = 2000
+            gameOver()
+            break
+
         enemyX[i] += enemyX_change[i]
         if enemyX[i] <= 0:
-            enemyX_change[i] = 0.2
+            enemyX_change[i] = 0.5
             enemyY[i] += enemyY_change[i]
         elif enemyX[i] >= 736:
-            enemyX_change[i] = -0.2
+            enemyX_change[i] = -0.5
             enemyY[i] += enemyY_change[i]
+
         # Collision
+
         collision = isCollision(enemyX[i], enemyY[i], bulletX, bulletY)
         if collision:
             bulletY = 480
@@ -182,6 +218,7 @@ while run:
         enemy(enemyX[i], enemyY[i], i)
 
     # Bullet Movement
+
     if bulletY <= 0:
         bulletY = 480
         bullet_state = "ready"
